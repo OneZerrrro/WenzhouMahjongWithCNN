@@ -7,8 +7,15 @@
 ### Repaired
 ### Deprecated
 
+## [2026-06-05-01] Hsia
+### Added
+- 添加了可视化相关的文件MahjongVisualization[Todo]
+- 添加了Players中Human玩家的逻辑
+  - 使用键盘输入合法动作编号对应的序号以做出动作
+  - 输入非法/错误内容则会刷新该行
+
 ## [2026-06-04-01] Hsia
-## Added
+### Added
 - 添加了初始代码
   - MahjongEngine：处理一轮麻将要干的事情
   - HandGenerator：生成符合要求的手牌

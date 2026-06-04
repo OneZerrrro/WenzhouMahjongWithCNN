@@ -54,10 +54,27 @@ class BaseMahjongAgent(ABC):
     #     return f"[{self.name}] Player {self.playerid})"
     
 class Human(BaseMahjongAgent):
+    def __init__(self, name: str):
+        super().__init__(name)
     def choose_action(self, game_state: dict, legal_actions: list[int]) -> int:
-        """通过用户输入选择一个动作"""
-        # Todo
-        pass
+        """通过生物神经网络选择一个动作"""
+        action_map = {}
+        for idx, action in enumerate(legal_actions):
+            action_map[idx] = action
+        while True:
+            try:
+                user_input = int(input())
+                if user_input in action_map:
+                    return action_map[user_input]
+                else:
+                    message = "无效输入, 请重新输入合法动作的数字编号: "
+                    self.overwrite_last_line(message)
+            except ValueError as e:
+                message = "输入错误, 请重新输入合法动作的数字编号: "
+                self.overwrite_last_line(message)
+    def overwrite_last_line(message: str) -> None:
+        """光标上移并清空该行，同时打印新消息"""
+        print("\033[F\033[K" + message, end='', flush=True)
 
 class RandomAI(BaseMahjongAgent):
     def choose_action(self, game_state: dict, legal_actions: list[int]) -> int:
