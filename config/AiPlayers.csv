@@ -1,0 +1,4 @@
+PlayerID,PlayersName,PlayerClass,PlayerModelName
+0,Human,Human,0
+1,Test,CNN_v1,cnn_v1_1
+2,TestJudgement,RuleBased,0
