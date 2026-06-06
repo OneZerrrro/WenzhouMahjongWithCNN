@@ -1,11 +1,19 @@
 # 修改记录
-所有修改记录会被记录在此处
-## [unreleased] Name
+所有修改记录会被记录在此处，格式：
+> \## [unreleased] Name
+> \### Added
+> \### Changed
+> \### Removed
+> \### Repaired
+> \### Deprecated
+
+## [2026-06-07-01] Hsia
 ### Added
+- 添加了SaveStru.py并明确了单存档状态机的结构
 ### Changed
-### Removed
-### Repaired
-### Deprecated
+- 修改ProgramStructure名称为EngineStru
+- 修改EngineStru位置到ProgramStructure文件夹下
+- 更新了ChangeLog的格式内容
 
 ## [2026-06-05-01] Hsia
 ### Added
