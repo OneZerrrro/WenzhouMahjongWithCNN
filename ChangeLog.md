@@ -7,6 +7,18 @@
 > \### Repaired
 > \### Deprecated
 
+## [2026-06-07-02] Hsia
+### Added
+- 添加了按照结构MahjongMain所需的各类状态标志
+- 添加了MahjongMain的状态机结构（尚未完成）
+- 添加了重置状态机以及相关代码
+### Changed
+- 更新了Rules.md中的信息表示
+- 修改了存档格式从csv -> json
+- 修改了Characters的格式从csv -> json
+- 修改了Rules的名称为ConfigRules
+- 修改ConfigRules位置到ProgramStructure文件夹下
+
 ## [2026-06-07-01] Hsia
 ### Added
 - 添加了SaveStru.py并明确了单存档状态机的结构
