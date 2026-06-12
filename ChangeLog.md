@@ -7,6 +7,26 @@
 > \### Repaired
 > \### Deprecated
 
+## 待办事项
+- 模型加载方式还是有待商榷
+- 可视化这部分，Engine中还要装入和返回上一动作相关的代码（当playerid=-1时代表是摸牌的情况）
+- Engine中自动选择唯一可用选项的方式不能套用在人类玩家身上
+
+## [2026-06-13-01] Hsia
+### Added
+- 添加了Visualization中显示牌桌的相关函数：
+  - 添加了按顺序显示玩家的代码（目前进度是可以显示全部牌型，尚缺少玩家可选动作、上一玩家动作）
+- 针对可视化函数，对Engine中获取状态的函数：
+  - 添加了可见信息：每个人的暗杠次数
+  - 添加了不可见信息：每个人的弃牌指针
+  - 添加了当前庄家id
+- 添加了draw_card函数的返回值：当前摸到的牌的编号
+### Changed
+- 修改了MahjongVisualization的位置到MahjongTool
+- 修改了MahjongVisualization的名称为Visualization
+### Repaired
+- 修正了Players的overwrite_last_line函数中缺失self的bug
+
 ## [2026-06-07-02] Hsia
 ### Added
 - 添加了按照结构MahjongMain所需的各类状态标志

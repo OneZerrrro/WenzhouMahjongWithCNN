@@ -302,15 +302,17 @@ class HandManager:
         self.tile_wall.fill(0)
         self.wall_ptr = 0
 
-    def draw_card(self, player_id: int) -> None:
+    def draw_card(self, player_id: int) -> int:
         """摸牌，从牌堆摸一张牌并更新玩家手牌（已加入手牌）
         Args:
-            player_id (int): 当前玩家索引，0-3"""
+            player_id (int): 当前玩家索引，0-3
+        Returns:
+            card_id (int): 摸到的牌ID，0-33分别代表不同的牌"""
         if self.wall_ptr < len(self.tile_wall):
             card_id = self.tile_wall[self.wall_ptr]
             self.wall_ptr += 1
             self.players_hand[player_id]['hand'][card_id // 9, card_id % 9, 0] += 1
-            return
+            return card_id
         else: # 理论上基本不可能发生这种事情，因为在游戏流程中会在摸牌阶段检查牌堆是否为空并处理流局
             raise IndexError("牌堆已空，无法摸牌")
 

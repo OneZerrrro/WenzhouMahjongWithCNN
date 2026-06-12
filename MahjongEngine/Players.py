@@ -72,7 +72,7 @@ class Human(BaseMahjongAgent):
             except ValueError as e:
                 message = "输入错误, 请重新输入合法动作的数字编号: "
                 self.overwrite_last_line(message)
-    def overwrite_last_line(message: str) -> None:
+    def overwrite_last_line(self, message: str) -> None:
         """光标上移并清空该行，同时打印新消息"""
         print("\033[F\033[K" + message, end='', flush=True)
 

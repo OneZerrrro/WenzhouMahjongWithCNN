@@ -5,6 +5,7 @@ from typing import Literal
 from .MahjongState import GameState, WinResult, HandManager, ActionManager, CNNModelManager
 from .HandGenerator import HandGenerator
 from MahjongTools.HandCheckers import HandChecker
+from MahjongTools.Visualization import EngineVisualization
 from .Players import BaseMahjongAgent, Human, RandomAI, RuleBasedAI, CNNPlayer
 
 
@@ -40,9 +41,17 @@ class MahjongEngine:
         """静态玩家字典，包含非CNN玩家的预建对象，键为玩家类型，值为对应的玩家对象"""
         self.hand_checker = HandChecker()
         """手牌检查器"""
+        self.if_display = False
+        """是否显示游戏过程，默认为False"""
+        self.visualizer = EngineVisualization()
+        """游戏过程可视化对象，负责将当前局面在命令行画出来"""
+        self.banker_index = 0
+        """庄家索引，0-3分别代表四个玩家"""
+        self.last_action = {"playerid": None, "action_id": None}
+        """记录上一次操作的玩家ID和操作ID。注：当playerid=-1时表示是摸牌进张，action_id为摸牌的牌ID"""
 
     def reset(self, players_type: list, model_name: list, banker_index: Literal[0, 1, 2, 3], 
-              god_id: int = 33, shanting_num: Literal[-1, 0, 1, 2] = -1, current_base_score: Literal[1, 2, 3, 4] = 1):
+              god_id: int = 33, shanting_num: Literal[-1, 0, 1, 2] = -1, current_base_score: Literal[1, 2, 3, 4] = 1, if_display: bool = False):
         """重置游戏状态，准备开始新的一轮游戏
         Args:
             players_type (list): 按顺序输入玩家类型列表，数字含义：
@@ -54,8 +63,10 @@ class MahjongEngine:
             banker_index (int): 庄家索引，0-3分别代表四个玩家中的庄家
             god_id (int): 财神牌ID，0-26分别代表不同的牌，33表示白板，默认为33
             shanting_num (int): 0号玩家初始手牌向听数，-1表示不限制向听数
-            current_base_score (int): 当前底分，1-4分别代表不同的底分值，默认为1"""
+            current_base_score (int): 当前底分，1-4分别代表不同的底分值，默认为1
+            if_display (bool): 是否显示游戏过程，默认为False"""
         
+        self.if_display = if_display
         self.model_manager.check_model_update() # 检查CNN模型更新
         self.players: list[BaseMahjongAgent] = []
         for i, (p_type, m_name) in enumerate(zip(players_type, model_name)):
@@ -74,6 +85,7 @@ class MahjongEngine:
         self.game_state.current_god_id = god_id
         self.game_state.current_score = current_base_score
         self.action_manager.reset()
+        self.last_action = {"playerid": None, "action_id": None}
 
         # 抓牌、看牌，洗牌、码牌
         self.initial_hands, self.initial_wall = self.hand_generator.generate_hand(shanting_num)
@@ -306,7 +318,8 @@ class MahjongEngine:
 
     def draw_phase(self) -> int:
         """摸牌阶段，当前玩家从牌堆摸牌，并更新游戏状态和玩家手牌"""
-        self.hand_manager.draw_card(self.game_state.current_player_index)
+        draw_card_id = self.hand_manager.draw_card(self.game_state.current_player_index)
+        self.last_action = {"playerid": -1, "action_id": draw_card_id} # 记录摸牌动作
         self.game_state.draw_counter += 1
         # 检查是否流局：当牌堆剩余牌数不足以支持每位玩家再摸一次牌时，判定为流局
         if self.game_state.draw_counter - self.game_state.gang_counter >= 56:
@@ -469,12 +482,15 @@ class MahjongEngine:
             - 'hand': 当前玩家的手牌信息，4x9矩阵，表示每种牌的数量（不包括副露）
             - 'an_gang': 当前玩家的暗杠信息，4x9矩阵，表示每种牌是否暗杠
             - 'ming_gang': 每个玩家的明杠信息，4x9矩阵，表示每种牌是否明杠
+            - 'an_gang_count': 每个玩家的暗杠数量
             - 'peng': 每个玩家的碰牌信息，4x9矩阵，表示每种牌是否碰牌
             - 'chi': 每个玩家的吃牌信息，4x9矩阵，表示吃牌数量（取顺子首张牌）
             - 'discards': 每个玩家的弃牌历史，长度为28的数组，表示每次弃牌的牌ID，初始值为-1
+            - 'discard_ptr': 每个玩家的弃牌指针，整数表示当前弃牌历史中最新一张牌的位置
             - 'current_phase': 当前游戏阶段，整数表示不同阶段
             - 'remaining_tiles': 剩余牌数量，整数表示牌堆中剩余的牌数
             - 'is_banker': 是否为庄家，1表示是庄家，0表示非庄家
+            - 'banker_index': 庄家索引，0-3分别代表四个玩家
             - 'basic_score': 当前底分，整数表示当前的底分值
             ---
             - 'players_hand': 
@@ -490,12 +506,15 @@ class MahjongEngine:
                 'hand': self.hand_manager.players_hand[playerid]['hand'][:, :, 0],
                 'an_gang': self.hand_manager.players_hand[playerid]['melds'][:, :, 3],
                 'ming_gang': {i: self.hand_manager.players_hand[i]['melds'][:, :, 2] for i in range(4)},
+                'an_gang_count':{i: int(np.sum(self.hand_manager.players_hand[i]['melds'][:, :, 3])) for i in range(4)},
                 'peng': {i: self.hand_manager.players_hand[i]['melds'][:, :, 1] for i in range(4)},
                 'chi': {i: self.hand_manager.players_hand[i]['melds'][:, :, 0] for i in range(4)},
                 'discards': {i: self.hand_manager.players_hand[i]['discards'] for i in range(4)},
+                'discard_ptr': {i: self.hand_manager.players_hand[i]['discard_ptr'] for i in range(4)},
                 'current_phase': self.game_state.game_state,
                 'remaining_tiles': (56 - (self.game_state.draw_counter - self.game_state.gang_counter)) / 56,
                 'is_banker': 1 if playerid == self.banker_index else 0,
+                'banker_index': self.banker_index,
                 'basic_score': self.game_state.current_score
             }
         else:
