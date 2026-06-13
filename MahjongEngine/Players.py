@@ -9,6 +9,13 @@ import numpy as np
 from MahjongTools.HandCheckers import HandChecker
 
 
+TILE_NAMES = [
+        ["一万", "两万", "三万", "四万", "五万", "六万", "七万", "八万", "九万"],
+        ["一条", "两条", "三条", "四条", "五条", "六条", "七条", "八条", "九条"],
+        ["一筒", "两筒", "三筒", "四筒", "五筒", "六筒", "七筒", "八筒", "九筒"],
+        ["东风", "南风", "西风", "北风", "红中", "发财", "白板", "", ""]
+    ]
+
 
 class BaseMahjongAgent(ABC):
     def __init__(self, name: str):
@@ -56,11 +63,22 @@ class BaseMahjongAgent(ABC):
 class Human(BaseMahjongAgent):
     def __init__(self, name: str):
         super().__init__(name)
+        self.true_tile_names = TILE_NAMES
+    def reset(self, god_id: int) -> None:
+        """重置可视化状态"""
+        self.true_tile_names = TILE_NAMES
+        god_tile_name = TILE_NAMES[god_id//9][god_id%9]
+        self.true_tile_names[god_id//9][god_id%9] = "白板"
+        self.true_tile_names[3][6] = god_tile_name # 将财神牌显示为白板，原本的财神牌信息放在白板位置
+        return
     def choose_action(self, game_state: dict, legal_actions: list[int]) -> int:
         """通过生物神经网络选择一个动作"""
         action_map = {}
+        print("请根据以下合法动作列表输入对应的数字编号来选择一个动作:")
         for idx, action in enumerate(legal_actions):
             action_map[idx] = action
+            action_description = self.format_action(action)
+            print(f"{idx}: {action_description}")
         while True:
             try:
                 user_input = int(input())
@@ -76,6 +94,35 @@ class Human(BaseMahjongAgent):
         """光标上移并清空该行，同时打印新消息"""
         print("\033[F\033[K" + message, end='', flush=True)
 
+    def format_action(self, actionid: int) -> str:
+        """表示玩家的动作，包括动作类型和涉及的牌面信息
+        Args:
+            actionid (int): 动作ID"""
+        if actionid == 0:
+            return "过牌"
+        elif actionid == 1:
+            return "胡牌"
+        elif 2 <= actionid <= 35:
+            return f"弃{self.true_tile_names[(actionid-2)//9][(actionid-2)%9]}"
+        elif 36 <= actionid <= 69:
+            return f"暗杠{self.true_tile_names[(actionid-36)//9][(actionid-36)%9]}"
+        elif 70 <= actionid <= 103:
+            return f"明杠{self.true_tile_names[(actionid-70)//9][(actionid-70)%9]}"
+        elif 104 <= actionid <= 137:
+            return f"补杠{self.true_tile_names[(actionid-104)//9][(actionid-104)%9]}"
+        elif 138 <= actionid <= 171:
+            return f"碰{self.true_tile_names[(actionid-138)//9][(actionid-138)%9]}"
+        elif 172 <= actionid <= 234:
+            chi_card_type = (actionid - 172) // 21 # 0-2分别对应万条筒
+            chi_card_class = (actionid - 172) % 21 # 对应吃牌的三种组合
+            if chi_card_class <= 6:
+                return f"用{self.true_tile_names[chi_card_type][chi_card_class + 1]}和{self.true_tile_names[chi_card_type][chi_card_class + 2]}吃{self.true_tile_names[chi_card_type][chi_card_class]}"
+            elif 7 <= chi_card_class <= 13:
+                return f"用{self.true_tile_names[chi_card_type][chi_card_class - 7]}和{self.true_tile_names[chi_card_type][chi_card_class - 5]}吃{self.true_tile_names[chi_card_type][chi_card_class - 6]}"
+            else:
+                return f"用{self.true_tile_names[chi_card_type][chi_card_class - 14]}和{self.true_tile_names[chi_card_type][chi_card_class - 13]}吃{self.true_tile_names[chi_card_type][chi_card_class - 12]}"
+        return
+
 class RandomAI(BaseMahjongAgent):
     def choose_action(self, game_state: dict, legal_actions: list[int]) -> int:
         """随机选择一个动作"""
@@ -86,6 +133,7 @@ class RandomAI(BaseMahjongAgent):
         return random.choice(legal_actions)
 
 class RuleBasedAI(BaseMahjongAgent):
+    """基于规则的AI玩家，会尝试减小向听数，当无法减小向听数的时候会尝试增加有效进张数"""
     def __init__(self, name: str):
         super().__init__(name)
         self.checker = HandChecker()

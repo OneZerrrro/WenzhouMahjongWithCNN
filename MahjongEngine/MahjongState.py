@@ -211,14 +211,17 @@ class CNNModelManager:
         except Exception as e:
             # print(f"读取配置文件失败: {e}")
             return
-            
-        for info in config_data:
+        model_list = config_data.get('Model_List', [])
+        for info in model_list:
+            if not info or 'name' not in info or 'version' not in info or 'path' not in info:
+                continue
             name = info['name']
             new_version = info['version']
             path = info['path']
 
             if name not in self.loaded_info or self.loaded_info[name]['version'] != new_version:
-                self.load_or_update_model(name, new_version, path)
+                if path != "Example": # 这个判断是为了测试
+                    self.load_or_update_model(name, new_version, path)
         
     def load_or_update_model(self, name: str, version: float, path: str):
         """加载或更新模型，如果模型不存在则加载模型，如果模型版本不同则更新模型

@@ -47,8 +47,10 @@ class MahjongEngine:
         """游戏过程可视化对象，负责将当前局面在命令行画出来"""
         self.banker_index = 0
         """庄家索引，0-3分别代表四个玩家"""
-        self.last_action = {"playerid": None, "action_id": None}
-        """记录上一次操作的玩家ID和操作ID。注：当playerid=-1时表示是摸牌进张，action_id为摸牌的牌ID"""
+        self.last_action = {"playerid": None, "action_id": None} # 注：当playerid=-1时表示是摸牌进张，action_id为摸牌的牌ID
+        """记录上一次操作的玩家ID和操作ID"""
+        self.players_type = [0, 0, 0, 0]
+        """玩家类型列表，数字含义：0代表默认观看视角（默认是人类玩家），1代表任意类型的AI玩家"""
 
     def reset(self, players_type: list, model_name: list, banker_index: Literal[0, 1, 2, 3], 
               god_id: int = 33, shanting_num: Literal[-1, 0, 1, 2] = -1, current_base_score: Literal[1, 2, 3, 4] = 1, if_display: bool = False):
@@ -73,9 +75,14 @@ class MahjongEngine:
             if p_type == 1:
                 player = self.permanent_players[i]
                 player.bind_model(self.model_manager.get_model(m_name))
+                self.players_type[i] = 1
             else:
                 player = self.static_players[p_type] # 规则/随机玩家
+                self.players_type[i] = 0 if p_type == 0 else 1
+                if p_type == 0:
+                    self.static_players[0].reset(banker_index)
             self.players.append(player)
+            # 根据玩家类型设置self.players_type
 
         self.game_state.reset()
         self.win_result.reset()
@@ -85,7 +92,9 @@ class MahjongEngine:
         self.game_state.current_god_id = god_id
         self.game_state.current_score = current_base_score
         self.action_manager.reset()
-        self.last_action = {"playerid": None, "action_id": None}
+        self.last_action: dict[str, None | int] = {"playerid": None, "action_id": None}
+        if not 0 in self.players_type: # 如果没有默认观看视角，则默认第一个人为观看视角
+            self.players_type[0] = 0
 
         # 抓牌、看牌，洗牌、码牌
         self.initial_hands, self.initial_wall = self.hand_generator.generate_hand(shanting_num)
@@ -114,6 +123,8 @@ class MahjongEngine:
             self.action_manager.legal_action_list[playerid] = self.get_legal_actions(playerid=playerid)
         for pid, actions in self.action_manager.legal_action_list.items():
             if 1 in actions:    # 仅询问能胡牌的玩家
+                if self.if_display and self.players_type[pid] == 0:
+                    self.visualizer.draw_game(self.get_visible_state(pid)) # 开局检查阶段询问玩家操作前先可视化当前局面
                 self.action_manager.is_quested[pid] = True
                 self.action_manager.action_choosen[pid] = self.players[pid].choose_action(self.get_visible_state(pid), actions)
         action_player_index, _ = self.action_manager.judge_action_priority(self.game_state.current_player_index)
@@ -320,6 +331,8 @@ class MahjongEngine:
         """摸牌阶段，当前玩家从牌堆摸牌，并更新游戏状态和玩家手牌"""
         draw_card_id = self.hand_manager.draw_card(self.game_state.current_player_index)
         self.last_action = {"playerid": -1, "action_id": draw_card_id} # 记录摸牌动作
+        if self.if_display and self.players_type[self.game_state.current_player_index] == 0:
+            self.visualizer.draw_game(self.get_visible_state(self.game_state.current_player_index)) # 摸牌后立即可视化当前局面，包含摸牌动作
         self.game_state.draw_counter += 1
         # 检查是否流局：当牌堆剩余牌数不足以支持每位玩家再摸一次牌时，判定为流局
         if self.game_state.draw_counter - self.game_state.gang_counter >= 56:
@@ -327,11 +340,13 @@ class MahjongEngine:
         self.action_manager.legal_action_list[self.game_state.current_player_index] = self.get_legal_actions(playerid=self.game_state.current_player_index)
         
         # 检查当前玩家是否有多个合法操作，如果有则询问玩家选择，否则直接执行唯一的合法操作
-        if len(self.action_manager.legal_action_list[self.game_state.current_player_index]) > 1:
+        self.last_action['playerid'] = self.game_state.current_player_index # 记录last_action的玩家id
+        if len(self.action_manager.legal_action_list[self.game_state.current_player_index]) > 1 or self.players_type[self.game_state.current_player_index] == 0: # 有多个合法操作或者是人类玩家都需要选择
             self.action_manager.action_choosen[self.game_state.current_player_index] = self.players[self.game_state.current_player_index].choose_action(self.get_visible_state(self.game_state.current_player_index), self.action_manager.legal_action_list[self.game_state.current_player_index])
         else:
             self.action_manager.action_choosen[self.game_state.current_player_index] = self.action_manager.legal_action_list[self.game_state.current_player_index][0]
-        
+        self.last_action['action_id'] = self.action_manager.action_choosen[self.game_state.current_player_index] # 记录玩家选择的动作id
+
         if self.action_manager.action_choosen[self.game_state.current_player_index] == 1: # 胡牌
             self.win_result.hu_player_index = self.game_state.current_player_index
             # 摸牌阶段的胡牌不用把牌加入手牌，因为已经加入了
@@ -342,11 +357,16 @@ class MahjongEngine:
             self.game_state.gang_counter += 1
             self.win_result.tian_hu = False
             self.hand_manager.do_AnGang(self.game_state.current_player_index, self.action_manager.action_choosen[self.game_state.current_player_index] - 36)
+            if self.if_display: # 这里暗杠之后的可视化是给人类玩家看的
+                self.visualizer.draw_game(self.get_visible_state(self.players_type.index(0))) # 暗杠后立即可视化当前局面，包含暗杠动作
             return 0 # 重新进入摸牌阶段
+            # 这里说明暗杠之后直接进入摸牌阶段，也就是说visualizer并不会显示暗杠（暗杠那一条信息）
         elif 104 <= self.action_manager.action_choosen[self.game_state.current_player_index] <= 137: # 补杠
             self.win_result.category = 2
             self.game_state.last_discard_tile_id = self.action_manager.action_choosen[self.game_state.current_player_index] - 104
             self.hand_manager.remove_card(self.game_state.current_player_index, self.game_state.last_discard_tile_id)
+            if self.if_display: # 这里补杠之后的可视化是给人类玩家看的
+                self.visualizer.draw_game(self.get_visible_state(self.players_type.index(0))) # 补杠后立即可视化当前局面，包含补杠动作
             for playerid in range(4): # 更新所有玩家的合法操作列表，检查是否有玩家可以抢杠胡
                 self.action_manager.legal_action_list[playerid] = self.get_legal_actions(playerid=playerid)
             for pid, actions in self.action_manager.legal_action_list.items():
@@ -374,12 +394,19 @@ class MahjongEngine:
             for playerid in range(4):
                 self.action_manager.legal_action_list[playerid] = self.get_legal_actions(playerid=playerid)
             for pid, actions in self.action_manager.legal_action_list.items():
-                if len(actions) > 1:
+                if (len(actions) > 1 or self.players_type[pid] == 0) and pid != self.game_state.current_player_index:
+                    # 标记有多个合法操作的玩家或者人类玩家需要选择，且不是当前出牌的玩家才能进行询问
+                    if self.if_display and self.players_type[pid] == 0:
+                        self.visualizer.draw_game(self.get_visible_state(pid)) # 响应阶段询问玩家操作前先可视化当前局面，包含打牌动作
                     self.action_manager.is_quested[pid] = True
                     self.action_manager.action_choosen[pid] = self.players[pid].choose_action(self.get_visible_state(pid), actions)
             if any(self.action_manager.is_quested.values()):
                 action_player_index, actionid = self.action_manager.judge_action_priority(self.game_state.current_player_index)
                 self.action_manager.is_quested = {i: False for i in range(4)}
+                if actionid != 1:
+                    self.last_action['playerid'] = action_player_index
+                    self.last_action['action_id'] = actionid 
+                    # 当动作不是过牌时记录响应阶段的玩家动作，便于visualizer显示
 
                 if actionid == 1: # 胡牌
                     self.win_result.hu_player_index = action_player_index
@@ -393,6 +420,8 @@ class MahjongEngine:
                     self.hand_manager.do_MingGang(action_player_index, actionid - 70)
                     for pid in range(4):
                         self.win_result.player_status[pid].has_eight_pairs = False
+                    if self.if_display: # 这里明杠之后的可视化是给人类玩家看的
+                        self.visualizer.draw_game(self.get_visible_state(self.players_type.index(0))) # 明杠后立即可视化当前局面，包含明杠动作
                     self.game_state.current_player_index = action_player_index
                     return 0 # 重新进入摸牌阶段
                 elif 138 <= actionid <= 171:
@@ -402,6 +431,8 @@ class MahjongEngine:
                     self.game_state.current_player_index = action_player_index
                     for pid in range(4):
                         self.win_result.player_status[pid].has_eight_pairs = False
+                    if self.if_display: # 这里碰牌之后的可视化是给人类玩家看的
+                        self.visualizer.draw_game(self.get_visible_state(self.players_type.index(0))) # 碰牌后立即可视化当前局面，包含碰牌动作
                     return 2 # 进入弃牌阶段
                 elif 172 <= actionid <= 234:
                     self.win_result.category = 2
@@ -410,40 +441,49 @@ class MahjongEngine:
                     self.game_state.current_player_index = action_player_index
                     for pid in range(4):
                         self.win_result.player_status[pid].has_eight_pairs = False
+                    if self.if_display: # 这里吃牌之后的可视化是给人类玩家看的
+                        self.visualizer.draw_game(self.get_visible_state(self.players_type.index(0))) # 吃牌后立即可视化当前局面，包含吃牌动作
                     return 2 # 进入弃牌阶段
                 else: # 所有人都选择pass
                     self.win_result.di_hu = False
                     self.hand_manager.do_Discard(self.game_state.current_player_index, self.game_state.last_discard_tile_id)
                     self.game_state.last_discard_tile_id = -1
                     self.game_state.current_player_index = (self.game_state.current_player_index + 1) % 4
+                    if self.if_display: # 这里过牌之后的可视化是给人类玩家看的
+                        self.visualizer.draw_game(self.get_visible_state(self.players_type.index(0))) # 过牌不记录id，因此显示的是弃牌动画
                     return 0 # 进入摸牌阶段
             else:
                 self.win_result.di_hu = False
                 self.hand_manager.do_Discard(self.game_state.current_player_index, self.game_state.last_discard_tile_id)
                 self.game_state.last_discard_tile_id = -1
                 self.game_state.current_player_index = (self.game_state.current_player_index + 1) % 4
+                if self.if_display: # 这里无人响应的可视化是给人类玩家看的
+                    self.visualizer.draw_game(self.get_visible_state(self.players_type.index(0))) # 显示的是弃牌动画
                 return 0 # 进入摸牌阶段
         else: # 如果打出的牌是财神牌，直接进入下一个玩家的摸牌阶段，不询问响应
             self.hand_manager.do_Discard(self.game_state.current_player_index, self.game_state.last_discard_tile_id)
             self.game_state.last_discard_tile_id = -1
             self.game_state.current_player_index = (self.game_state.current_player_index + 1) % 4
+            if self.if_display: # 这里打出财神牌之后的可视化是给人类玩家看的
+                self.visualizer.draw_game(self.get_visible_state(self.players_type.index(0))) # 显示的是弃牌动画
             return 0 # 进入摸牌阶段
 
     def discard_phase(self) -> int:
         """弃牌阶段，当前玩家选择一张牌进行弃牌，并更新游戏状态和玩家手牌"""
         self.action_manager.legal_action_list[self.game_state.current_player_index] = self.get_legal_actions(playerid=self.game_state.current_player_index)
-        
+        self.last_action['playerid'] = self.game_state.current_player_index # 记录弃牌阶段的玩家id
         # 检查当前玩家是否有多个合法操作
-        if len(self.action_manager.legal_action_list[self.game_state.current_player_index]) > 1:
+        if len(self.action_manager.legal_action_list[self.game_state.current_player_index]) > 1 or self.players_type[self.game_state.current_player_index] == 0: # 有多个合法操作或者是人类玩家都需要选择
             self.action_manager.action_choosen[self.game_state.current_player_index] = self.players[self.game_state.current_player_index].choose_action(self.get_visible_state(self.game_state.current_player_index), self.action_manager.legal_action_list[self.game_state.current_player_index])
         else:
             self.action_manager.action_choosen[self.game_state.current_player_index] = self.action_manager.legal_action_list[self.game_state.current_player_index][0]
-        
+        self.last_action['action_id'] = self.action_manager.action_choosen[self.game_state.current_player_index] # 记录玩家选择的动作id
+
         if self.action_manager.action_choosen[self.game_state.current_player_index] == 33:
             self.win_result.player_status[self.game_state.current_player_index].has_three_gods = False
         self.game_state.last_discard_tile_id = self.action_manager.action_choosen[self.game_state.current_player_index] - 2
         self.hand_manager.remove_card(self.game_state.current_player_index, self.action_manager.action_choosen[self.game_state.current_player_index] - 2)
-        return 1 # 进入响应阶段
+        return 1 # 进入响应阶段，此处不需要可视化是因为响应阶段的可视化会显示打牌动作
 
     def qiang_gang_hu_phase(self) -> int:
         """抢杠胡阶段，其他玩家根据当前玩家的杠牌操作进行抢杠胡响应，并更新游戏状态和玩家手牌"""
@@ -492,6 +532,7 @@ class MahjongEngine:
             - 'is_banker': 是否为庄家，1表示是庄家，0表示非庄家
             - 'banker_index': 庄家索引，0-3分别代表四个玩家
             - 'basic_score': 当前底分，整数表示当前的底分值
+            - 'last_action': 上一玩家和上一玩家执行的动作
             ---
             - 'players_hand': 
                 所有玩家的完整手牌和副露信息
@@ -515,7 +556,8 @@ class MahjongEngine:
                 'remaining_tiles': (56 - (self.game_state.draw_counter - self.game_state.gang_counter)) / 56,
                 'is_banker': 1 if playerid == self.banker_index else 0,
                 'banker_index': self.banker_index,
-                'basic_score': self.game_state.current_score
+                'basic_score': self.game_state.current_score,
+                'last_action': self.last_action
             }
         else:
             visible_state = {i: self.hand_manager.players_hand[i] for i in range(4)}

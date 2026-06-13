@@ -10,7 +10,19 @@
 ## 待办事项
 - 模型加载方式还是有待商榷
 - 可视化这部分，Engine中还要装入和返回上一动作相关的代码（当playerid=-1时代表是摸牌的情况）
-- Engine中自动选择唯一可用选项的方式不能套用在人类玩家身上
+
+## [2026-06-14-01] Hsia
+### Added
+- Engine中添加了players_type来确认display的默认视角
+- Engine中添加了各处可视化函数
+- Engine中添加了上一动作的actionid和playerid
+- 添加了ModelList中示例模型的路径信息（Example）
+- 添加了人类玩家显示选项的代码
+### Changed
+- 修改了Engine中自动选择唯一可用选项的逻辑，现在人类玩家会持续被询问（即使只有一个选项）
+### Repaired
+- 修复了导入CNN模型时info对应的是Model_List字典而非一个列表的情况
+- 修复了当前玩家在弃牌后能对自己的弃牌进行响应的bug
 
 ## [2026-06-13-01] Hsia
 ### Added
