@@ -19,7 +19,7 @@ def main():
     HuPlayer = {i: 0 for i in range(4)}
 
     # for i in range(game_rounds): # 3-5向听数最为接近实际游戏情况。
-    engine.reset([0, 3, 3, 3], [None for _ in range(4)], random.randint(0, 3), random.randint(0, 33), -1, 1, True)
+    engine.reset([3, 3, 3, 3], [None for _ in range(4)], random.randint(0, 3), random.randint(0, 33), -1, 1, True)
     _, endReasonNum, WinResult = engine.play_one_round()
     HuNum += 1 if endReasonNum == 1 else 0
     if WinResult.hu_player_index != -1:

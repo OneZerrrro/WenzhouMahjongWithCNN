@@ -119,6 +119,9 @@ class Human(BaseMahjongAgent):
                 user_input = int(input())
                 if user_input in action_map:
                     return action_map[user_input]
+                elif user_input == 114514:
+                    print(game_state)
+                    input("按回车键继续...")
                 else:
                     message = "无效输入, 请重新输入合法动作的数字编号: "
                     self.overwrite_last_line(message)
@@ -199,6 +202,8 @@ class RuleBasedAI(BaseMahjongAgent):
         discard_actions = [a for a in legal_actions if 2 <= a <= 35]
         if discard_actions: # 选择弃牌
             return self.choose_discard(game_state, discard_actions)
+        
+        return 0 # 其他动作（过牌）直接返回0
         
     def choose_chi(self, game_state: dict[str, dict[int, np.ndarray] | np.ndarray], chi_actions: list[int]) -> int:
         """基于规则选择一个吃牌动作

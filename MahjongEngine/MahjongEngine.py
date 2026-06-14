@@ -213,13 +213,15 @@ class MahjongEngine:
             hand_counts = self.hand_manager.players_hand[playerid]['hand'][:, :, 0]
             val = np.where(hand_counts[3, 0:6] == 1)[0]
             cgod, vgod = divmod(self.game_state.current_god_id, 9)
-            if val.size > 0 or (hand_counts[cgod, vgod] > 0 and 27 <= self.game_state.current_god_id < 33): # 优先打出单张字牌以及前端的代替白板的数字牌（除了白板）
+            if val.size > 0: # or (hand_counts[cgod, vgod] > 0 and 27 <= self.game_state.current_god_id < 33): # 优先打出单张字牌以及前端的代替白板的数字牌（除了白板）
                 for v in val:
                     tile_id = 3 * 9 + v
                     if tile_id < 34: # 排除掉 4x9 矩阵中最后多出的位（理论上没有）
                         legal_actions.append(tile_id + 2)
-                if (hand_counts[cgod, vgod] > 0 and 27 <= self.game_state.current_god_id < 33):
-                    legal_actions.append(self.game_state.current_god_id + 2)
+                # if (hand_counts[cgod, vgod] > 0 and 27 <= self.game_state.current_god_id < 33):
+                #     legal_actions.append(self.game_state.current_god_id + 2)
+                if hand_counts[3, 6] > 0 and 27 <= self.game_state.current_god_id < 33:
+                    legal_actions.append(33 + 2)
             else:
                 col, val = np.where(hand_counts > 0)
                 for c, v in zip(col, val):
@@ -284,13 +286,15 @@ class MahjongEngine:
             hand_counts = self.hand_manager.players_hand[playerid]['hand'][:, :, 0]
             val = np.where(hand_counts[3, 0:6] == 1)[0]
             cgod, vgod = divmod(self.game_state.current_god_id, 9)
-            if val.size > 0 or (hand_counts[cgod, vgod] > 0 and 27 <= self.game_state.current_god_id < 33): # 优先打出单张字牌（除了白板）
+            if val.size > 0: # or (hand_counts[cgod, vgod] > 0 and 27 <= self.game_state.current_god_id < 33): # 优先打出单张字牌（除了白板）
                 for v in val:
                     tile_id = 3 * 9 + v
                     if tile_id < 34: # 排除掉 4x9 矩阵中最后多出的位（理论上没有）
                         legal_actions.append(tile_id + 2)
-                if (hand_counts[cgod, vgod] > 0 and 27 <= self.game_state.current_god_id < 33):
-                    legal_actions.append(self.game_state.current_god_id + 2)
+                # if (hand_counts[cgod, vgod] > 0 and 27 <= self.game_state.current_god_id < 33):
+                #     legal_actions.append(self.game_state.current_god_id + 2)
+                if hand_counts[3, 6] > 0 and 27 <= self.game_state.current_god_id < 33:
+                    legal_actions.append(33 + 2)
             else:
                 col, val = np.where(hand_counts > 0)
                 for c, v in zip(col, val):

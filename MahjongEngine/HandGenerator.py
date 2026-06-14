@@ -96,7 +96,7 @@ class HandGenerator:
         for _ in range(5-num_triples):
             self.add_sequence(pool, player_hand)
         self.add_pair(pool, player_hand)
-        drop_candidates = np.argwhere(pool > 0)
+        drop_candidates = np.argwhere(player_hand[:, :, 0] > 0)
         choice = np.random.randint(0, len(drop_candidates))
         player_hand[drop_candidates[choice][0], drop_candidates[choice][1], 0] -= 1
         pool[drop_candidates[choice][0], drop_candidates[choice][1]] += 1

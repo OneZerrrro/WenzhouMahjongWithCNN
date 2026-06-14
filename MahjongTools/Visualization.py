@@ -25,6 +25,7 @@
 import numpy as np
 import os
 from copy import deepcopy
+import time
 
 TILE_NAMES = [
         ["一萬", "二萬", "三萬", "四萬", "伍萬", "六萬", "七萬", "八萬", "九萬"],
@@ -53,6 +54,7 @@ class EngineVisualization:
         os.system('cls' if os.name == 'nt' else 'clear') # 每次绘制前先清屏，保持界面整洁
         self.display_game_state(game_state)
         self.display_last_action(game_state['last_action'])
+        time.sleep(1)
         return
 
     def display_game_state(self, game_state: dict) -> None:
@@ -63,9 +65,9 @@ class EngineVisualization:
         player_meld = {i: {} for i in range(3)} # 按相对玩家的位置信息存储每个(第三方)玩家的牌面信息
         current_player_meld = self.format_player_meld(game_state['real_order'][0], game_state, True)
         # 手牌中将财神牌和白板牌的数量交换位置，以正确显示信息
-        god_num = game_state['hand'][game_state['god_id']//9][game_state['god_id']%9]
-        game_state['hand'][game_state['god_id']//9][game_state['god_id']%9] = game_state['hand'][3][6]
-        game_state['hand'][3][6] = god_num
+        # god_num = game_state['hand'][game_state['god_id']//9][game_state['god_id']%9]
+        # game_state['hand'][game_state['god_id']//9][game_state['god_id']%9] = game_state['hand'][3][6]
+        # game_state['hand'][3][6] = god_num
         for i in range(3):
             player_meld[i] = self.format_player_meld(game_state['real_order'][i+1], game_state, False)
         print("当前庄家玩家: 玩家", game_state['banker_index'], "，当前底分: ", game_state['basic_score'])
@@ -80,12 +82,12 @@ class EngineVisualization:
             if player_meld[j]['peng']:                  self.format_and_add_meld_to_vertical(total_vertical, player_meld[j]['peng'], 'peng') # print("碰牌: ", player_meld[j]['peng'])
             if player_meld[j]['chi']:                   self.format_and_add_meld_to_vertical(total_vertical, player_meld[j]['chi'], 'chi') # print("吃牌: ", player_meld[j]['chi'])
             if player_meld[j]['ming_gang']:             self.format_and_add_meld_to_vertical(total_vertical, player_meld[j]['ming_gang'], 'ming_gang') # print("明杠: ", player_meld[j]['ming_gang'])
-            if total_vertical[0]:                      print("".join(total_vertical[0]))
-            if total_vertical[1]:                      print("".join(total_vertical[1]))
+            if total_vertical[0]:                       print("".join(total_vertical[0]))
+            if total_vertical[1]:                       print("".join(total_vertical[1]))
             if player_meld[j]['an_gang_count'] > 0:     print("暗杠数量: ", player_meld[j]['an_gang_count'])
             if player_meld[j]['discards']:              self.format_and_add_meld_to_vertical(discard_vertical, player_meld[j]['discards'], 'discards') # print("弃牌: ", player_meld[j]['discards'])
-            if discard_vertical[0]:                    print("".join(discard_vertical[0]))
-            if discard_vertical[1]:                    print("".join(discard_vertical[1]))
+            if discard_vertical[0]:                     print("".join(discard_vertical[0]))
+            if discard_vertical[1]:                     print("".join(discard_vertical[1]))
             print("--------------------")
         print("当前玩家: 玩家", game_state['real_order'][0])
         hand_vertical = [[], []]
