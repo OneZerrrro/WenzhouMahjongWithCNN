@@ -7,13 +7,14 @@ from Modules.ModulesSturcture import MahjongCNN_v1
 import random
 import numpy as np
 from MahjongTools.HandCheckers import HandChecker
+from copy import deepcopy
 
 
 TILE_NAMES = [
-        ["一万", "两万", "三万", "四万", "五万", "六万", "七万", "八万", "九万"],
-        ["一条", "两条", "三条", "四条", "五条", "六条", "七条", "八条", "九条"],
-        ["一筒", "两筒", "三筒", "四筒", "五筒", "六筒", "七筒", "八筒", "九筒"],
-        ["东风", "南风", "西风", "北风", "红中", "发财", "白板", "", ""]
+        ["一萬", "二萬", "三萬", "四萬", "伍萬", "六萬", "七萬", "八萬", "九萬"],
+        ["一條", "二條", "三條", "四條", "伍條", "六條", "七條", "八條", "九條"],
+        ["一筒", "二筒", "三筒", "四筒", "伍筒", "六筒", "七筒", "八筒", "九筒"],
+        ["東風", "南風", "西風", "北風", "紅中", "發財", "白板", "", ""]
     ]
 
 
@@ -63,22 +64,56 @@ class BaseMahjongAgent(ABC):
 class Human(BaseMahjongAgent):
     def __init__(self, name: str):
         super().__init__(name)
-        self.true_tile_names = TILE_NAMES
+        # self.true_tile_names = TILE_NAMES
+
     def reset(self, god_id: int) -> None:
         """重置可视化状态"""
-        self.true_tile_names = TILE_NAMES
+        self.true_tile_names = deepcopy(TILE_NAMES)
         god_tile_name = TILE_NAMES[god_id//9][god_id%9]
         self.true_tile_names[god_id//9][god_id%9] = "白板"
         self.true_tile_names[3][6] = god_tile_name # 将财神牌显示为白板，原本的财神牌信息放在白板位置
         return
+    
     def choose_action(self, game_state: dict, legal_actions: list[int]) -> int:
         """通过生物神经网络选择一个动作"""
         action_map = {}
+        vis_actions = [[], [], [], [], []]
         print("请根据以下合法动作列表输入对应的数字编号来选择一个动作:")
         for idx, action in enumerate(legal_actions):
             action_map[idx] = action
-            action_description = self.format_action(action)
-            print(f"{idx}: {action_description}")
+            action_descriptions = self.format_action(action)
+            # print(f"{idx}: {action_descriptions}")
+            vis_actions[0].append(f"{idx:02d}")
+
+            if not action_descriptions[0] == "用":
+                vis_actions[1].append(action_descriptions[0])
+            else:
+                vis_actions[1].append(action_descriptions[1])
+
+            if action_descriptions[0] == "过" or action_descriptions[0] == "胡" or action_descriptions[0] == "弃" or action_descriptions[0] == "碰":
+                vis_actions[2].append("  ")
+            elif action_descriptions[0] == "用":
+                vis_actions[2].append(action_descriptions[4])
+            else:
+                vis_actions[2].append(action_descriptions[1])
+
+            if action_descriptions[0] == "过" or action_descriptions[0] == "胡":
+                vis_actions[3].append("  ")
+            elif action_descriptions[0] == "用":
+                vis_actions[3].append("吃")
+            else:
+                vis_actions[3].append(action_descriptions[-2])
+            
+            if not action_descriptions[0] == "用":
+                vis_actions[4].append(action_descriptions[-1])
+            else:
+                vis_actions[4].append(action_descriptions[7])
+        print(" ".join(vis_actions[0]))
+        print(" ".join(vis_actions[1]))
+        print(" ".join(vis_actions[2]))
+        print(" ".join(vis_actions[3]))
+        print(" ".join(vis_actions[4]))
+
         while True:
             try:
                 user_input = int(input())
@@ -90,6 +125,7 @@ class Human(BaseMahjongAgent):
             except ValueError as e:
                 message = "输入错误, 请重新输入合法动作的数字编号: "
                 self.overwrite_last_line(message)
+
     def overwrite_last_line(self, message: str) -> None:
         """光标上移并清空该行，同时打印新消息"""
         print("\033[F\033[K" + message, end='', flush=True)

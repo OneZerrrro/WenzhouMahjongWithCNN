@@ -80,13 +80,14 @@ class MahjongEngine:
                 player = self.static_players[p_type] # 规则/随机玩家
                 self.players_type[i] = 0 if p_type == 0 else 1
                 if p_type == 0:
-                    self.static_players[0].reset(banker_index)
+                    self.static_players[0].reset(god_id)
             self.players.append(player)
             # 根据玩家类型设置self.players_type
 
         self.game_state.reset()
         self.win_result.reset()
         self.hand_manager.reset()
+        self.visualizer.reset(god_id)
         self.banker_index = banker_index
         self.game_state.current_player_index = banker_index
         self.game_state.current_god_id = god_id

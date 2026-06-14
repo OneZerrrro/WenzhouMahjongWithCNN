@@ -9,7 +9,16 @@
 
 ## 待办事项
 - 模型加载方式还是有待商榷
-- 可视化这部分，Engine中还要装入和返回上一动作相关的代码（当playerid=-1时代表是摸牌的情况）
+- 接下来要完善的是上级的计分系统和模型导入的系统
+
+## [2026-06-14-02] Hsia
+### Changed
+- 修改了Visualization中的可视化部分，让绘图看起来更加美观正确
+### Repaired
+- 修复了visualization没有正确reset的bug
+- 修复了显示时财神数量和白板数量没有正确交换的bug
+  - 修复了交换时直接交换原始状态的bug
+- 修复了Human类reset时误将banker_index当成god_id传入的错误
 
 ## [2026-06-14-01] Hsia
 ### Added

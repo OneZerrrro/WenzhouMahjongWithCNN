@@ -24,12 +24,13 @@
 
 import numpy as np
 import os
+from copy import deepcopy
 
 TILE_NAMES = [
-        ["一万", "两万", "三万", "四万", "五万", "六万", "七万", "八万", "九万"],
-        ["一条", "两条", "三条", "四条", "五条", "六条", "七条", "八条", "九条"],
-        ["一筒", "两筒", "三筒", "四筒", "五筒", "六筒", "七筒", "八筒", "九筒"],
-        ["东风", "南风", "西风", "北风", "红中", "发财", "白板", "", ""]
+        ["一萬", "二萬", "三萬", "四萬", "伍萬", "六萬", "七萬", "八萬", "九萬"],
+        ["一條", "二條", "三條", "四條", "伍條", "六條", "七條", "八條", "九條"],
+        ["一筒", "二筒", "三筒", "四筒", "伍筒", "六筒", "七筒", "八筒", "九筒"],
+        ["東風", "南風", "西風", "北風", "紅中", "發財", "白板", "", ""]
     ]
 
 class EngineVisualization:
@@ -39,7 +40,7 @@ class EngineVisualization:
     
     def reset(self, god_id: int) -> None:
         """重置可视化状态"""
-        self.true_tile_names = TILE_NAMES
+        self.true_tile_names = deepcopy(TILE_NAMES)
         god_tile_name = TILE_NAMES[god_id//9][god_id%9]
         self.true_tile_names[god_id//9][god_id%9] = "白板"
         self.true_tile_names[3][6] = god_tile_name # 将财神牌显示为白板，原本的财神牌信息放在白板位置
@@ -58,30 +59,50 @@ class EngineVisualization:
         """显示当前游戏状态，包括玩家手牌、牌墙剩余牌数、当前玩家等信息
         Args:
             game_state: 当前游戏状态对象，从MahjongEngine的get_visible_state方法获取"""
+        game_state = deepcopy(game_state) # 避免修改原始游戏状态对象
         player_meld = {i: {} for i in range(3)} # 按相对玩家的位置信息存储每个(第三方)玩家的牌面信息
         current_player_meld = self.format_player_meld(game_state['real_order'][0], game_state, True)
+        # 手牌中将财神牌和白板牌的数量交换位置，以正确显示信息
+        god_num = game_state['hand'][game_state['god_id']//9][game_state['god_id']%9]
+        game_state['hand'][game_state['god_id']//9][game_state['god_id']%9] = game_state['hand'][3][6]
+        game_state['hand'][3][6] = god_num
         for i in range(3):
             player_meld[i] = self.format_player_meld(game_state['real_order'][i+1], game_state, False)
-        print("当前庄家玩家: 玩家", game_state['banker_index'],"，当前底分:", game_state['basic_score'])
+        print("当前庄家玩家: 玩家", game_state['banker_index'], "，当前底分: ", game_state['basic_score'])
         print("牌墙剩余牌数: ", int(game_state['remaining_tiles'] * 56), "，当前财神牌: ", TILE_NAMES[game_state['god_id']//9][game_state['god_id']%9])
         print("--------------------")
         print_name_map = {0: "下", 1: "对", 2: "上"}
         for i in range(3):
             j = (i + 1) % 3
+            total_vertical = [[], []]
+            discard_vertical = [[], []]
             print(f"{print_name_map[j]}家: 玩家", game_state['real_order'][j+1])
-            if player_meld[j]['peng']:                  print("碰牌: ", player_meld[j]['peng'])
-            if player_meld[j]['chi']:                   print("吃牌: ", player_meld[j]['chi'])
-            if player_meld[j]['ming_gang']:             print("明杠: ", player_meld[j]['ming_gang'])
+            if player_meld[j]['peng']:                  self.format_and_add_meld_to_vertical(total_vertical, player_meld[j]['peng'], 'peng') # print("碰牌: ", player_meld[j]['peng'])
+            if player_meld[j]['chi']:                   self.format_and_add_meld_to_vertical(total_vertical, player_meld[j]['chi'], 'chi') # print("吃牌: ", player_meld[j]['chi'])
+            if player_meld[j]['ming_gang']:             self.format_and_add_meld_to_vertical(total_vertical, player_meld[j]['ming_gang'], 'ming_gang') # print("明杠: ", player_meld[j]['ming_gang'])
+            if total_vertical[0]:                      print("".join(total_vertical[0]))
+            if total_vertical[1]:                      print("".join(total_vertical[1]))
             if player_meld[j]['an_gang_count'] > 0:     print("暗杠数量: ", player_meld[j]['an_gang_count'])
-            if player_meld[j]['discards']:              print("弃牌: ", player_meld[j]['discards'])
+            if player_meld[j]['discards']:              self.format_and_add_meld_to_vertical(discard_vertical, player_meld[j]['discards'], 'discards') # print("弃牌: ", player_meld[j]['discards'])
+            if discard_vertical[0]:                    print("".join(discard_vertical[0]))
+            if discard_vertical[1]:                    print("".join(discard_vertical[1]))
             print("--------------------")
         print("当前玩家: 玩家", game_state['real_order'][0])
-        print("手牌: ", current_player_meld['hand'])
-        if current_player_meld['peng']:         print("碰牌: ", current_player_meld['peng'])
-        if current_player_meld['chi']:          print("吃牌: ", current_player_meld['chi'])
-        if current_player_meld['ming_gang']:    print("明杠: ", current_player_meld['ming_gang'])
-        if current_player_meld['an_gang']:      print("暗杠: ", current_player_meld['an_gang'])
-        if current_player_meld['discards']:     print("弃牌: ", current_player_meld['discards'])
+        hand_vertical = [[], []]
+        total_vertical = [[], []]
+        discard_vertical = [[], []]
+        self.format_and_add_meld_to_vertical(hand_vertical, current_player_meld['hand'], 'hand') # print("手牌: ", current_player_meld['hand'])
+        if current_player_meld['peng']:         self.format_and_add_meld_to_vertical(total_vertical, current_player_meld['peng'], 'peng') # print("碰牌: ", current_player_meld['peng'])
+        if current_player_meld['chi']:          self.format_and_add_meld_to_vertical(total_vertical, current_player_meld['chi'], 'chi') # print("吃牌: ", current_player_meld['chi'])
+        if current_player_meld['ming_gang']:    self.format_and_add_meld_to_vertical(total_vertical, current_player_meld['ming_gang'], 'ming_gang') # print("明杠: ", current_player_meld['ming_gang'])
+        if current_player_meld['an_gang']:      self.format_and_add_meld_to_vertical(total_vertical, current_player_meld['an_gang'], 'an_gang') # print("暗杠: ", current_player_meld['an_gang'])
+        if current_player_meld['discards']:     self.format_and_add_meld_to_vertical(discard_vertical, current_player_meld['discards'], 'discards') # print("弃牌: ", current_player_meld['discards'])
+        print("".join(hand_vertical[0]))
+        print("".join(hand_vertical[1]))
+        if total_vertical[0]:                      print("".join(total_vertical[0]))
+        if total_vertical[1]:                      print("".join(total_vertical[1]))
+        if discard_vertical[0]:                    print("".join(discard_vertical[0]))
+        if discard_vertical[1]:                    print("".join(discard_vertical[1]))
         print("--------------------")
         return
 
@@ -183,4 +204,46 @@ class EngineVisualization:
                 else:
                     print("用", self.true_tile_names[chi_card_type][chi_card_class - 14], "和", self.true_tile_names[chi_card_type][chi_card_class - 13], "吃了", self.true_tile_names[chi_card_type][chi_card_class - 12])
         print("--------------------")
+        return
+    
+    @staticmethod
+    def format_and_add_meld_to_vertical(total_vertical: list[list[str]], meld: list[str], meld_type: str) -> None:
+        """将碰牌、杠牌、吃牌等信息格式化为竖排显示的字符串，方便在命令行中展示
+        Args:
+            total_vertical(list): 已有的竖排显示字符串
+            meld(list): 包含玩家碰牌、杠牌、吃牌等信息的列表，元素为字符串形式的牌面信息
+            meld_type(str): 牌型，'peng'表示碰牌，'chi'表示吃牌，'ming_gang'表示明杠，'discards'表示弃牌，'hand'表示手牌，'an_gang'表示暗杠
+        Returns:
+            None"""
+        if total_vertical:
+            total_vertical[0].append("  ")
+            total_vertical[1].append("  ")
+        if meld_type == 'peng':
+            for tile in meld:
+                for i in range(6):
+                    total_vertical[i//3].append(tile[i//3])
+                    total_vertical[i//3].append(" ")
+        elif meld_type == 'ming_gang' or meld_type == 'an_gang':
+            for tile in meld:
+                if meld_type == 'an_gang':
+                    total_vertical[0].append("[ ")
+                    total_vertical[1].append("[ ")
+                for i in range(8):
+                    total_vertical[i//4].append(tile[i//4])
+                    total_vertical[i//4].append(" ")
+                if meld_type == 'an_gang':
+                    total_vertical[0].append("]")
+                    total_vertical[1].append("]")
+        elif meld_type == 'discards' or meld_type == 'hand':
+            for tile in meld:
+                total_vertical[0].append(tile[0])
+                total_vertical[0].append(" ")
+                total_vertical[1].append(tile[1])
+                total_vertical[1].append(" ")
+        else:
+            for tile in meld:
+                parts = tile.split(",")
+                for i in range(6):
+                    total_vertical[i//3].append(parts[i%3][i//3])
+                    total_vertical[i//3].append(" ")
         return

@@ -1,9 +1,10 @@
 # 温州麻将 with (待开发训练的)人工智能
 
-## 规则
+## 麻将规则
 梦到啥是啥
 ## 有什么游玩的方法
-无法游玩，没写好
+- 跑一下config\shanten_map\ShantenMapGenerator2.exe（大概几个小时，跑完的bin有点大没放出来）
+- 运行test\test_MahjongEngineWithVisualizer.py就能玩了
 ## 训练模块在哪里
 不会写没写好等我问问GPT老师
 ## 能不能看ai玩
