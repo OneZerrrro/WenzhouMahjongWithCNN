@@ -18,17 +18,23 @@ def main():
     HuNum = 0
     HuPlayer = {i: 0 for i in range(4)}
 
+    if_continue = True
+    while if_continue:
     # for i in range(game_rounds): # 3-5向听数最为接近实际游戏情况。
-    engine.reset([3, 3, 3, 3], [None for _ in range(4)], random.randint(0, 3), random.randint(0, 33), -1, 1, True)
-    _, endReasonNum, WinResult = engine.play_one_round()
-    HuNum += 1 if endReasonNum == 1 else 0
-    if WinResult.hu_player_index != -1:
-        HuPlayer[WinResult.hu_player_index] += 1
+        engine.reset([0, 3, 3, 3], [None for _ in range(4)], random.randint(0, 3), random.randint(0, 33), -1, 1, True)
+        _, endReasonNum, WinResult = engine.play_one_round()
+        HuNum += 1 if endReasonNum == 1 else 0
+        if WinResult.hu_player_index != -1:
+            HuPlayer[WinResult.hu_player_index] += 1
 
-    if endReasonNum == 1:
-        print("这一局获胜的玩家是玩家", WinResult.hu_player_index)
-    else:
-        print("这一局没有玩家胡牌，流局结束")
+        if endReasonNum == 1:
+            print("这一局获胜的玩家是玩家", WinResult.hu_player_index)
+        else:
+            print("这一局没有玩家胡牌，流局结束")
+        print("是否继续？(y/n)")
+        user_input = input().lower()
+        if user_input != 'y':
+            if_continue = False
     # if (i+1) % 100 == 0:
     #     print(f"{i+1}局游戏模拟完成...")
 

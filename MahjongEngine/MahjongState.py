@@ -70,10 +70,12 @@ class GameState:
         - 1：胡局
         - 2：流局
     - .game_state (int): 游戏阶段标志
+        - -1：初始状态
         - 0：摸牌阶段
         - 1：响应阶段
         - 2：弃牌阶段
         - 3：抢杠胡阶段
+        - 4：针对摸牌阶段的抢杠胡判定设置的阶段
     - .draw_counter (int): 摸牌计数器，记录当前轮次的摸牌次数
     - .discard_counter (int): 弃牌计数器，记录当前轮次的弃牌次数
     - .last_discard_tile_id (int): 上一次弃牌的牌ID，初始值为-1
@@ -86,13 +88,14 @@ class GameState:
         - 1：胡局
         - 2：流局
         """
-        self.game_state: Literal[-1, 0, 1, 2, 3] = -1
+        self.game_state: Literal[-1, 0, 1, 2, 3, 4] = -1
         """游戏阶段标志
         - -1：初始状态
         - 0：摸牌阶段
         - 1：响应阶段
         - 2：弃牌阶段
         - 3：抢杠胡阶段
+        - 4：针对摸牌阶段的抢杠胡判定设置的阶段
         """
         self.draw_counter = 0
         """摸牌计数器，记录当前轮次的摸牌次数"""

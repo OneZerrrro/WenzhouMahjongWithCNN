@@ -302,8 +302,10 @@ class MahjongEngine:
                     if tile_id < 34: # 排除掉 4x9 矩阵中最后多出的位（理论上没有）和白板
                         legal_actions.append(tile_id + 2)
 
-        elif self.game_state.game_state == 3:
+        elif self.game_state.game_state == 4:
             # 抢杠胡阶段   检查胡牌 Pass
+            # 注：phase不用3是因为抢杠胡阶段没有调用legal action进行判定，而是在摸牌阶段将game state设置为4进行判定
+            # 实际上应为摸牌阶段的抢杠胡判定
             legal_actions.append(0)
             if self.hand_checker.MixedHu_Checker(self.hand_manager.players_hand[playerid]['hand'], self.game_state.last_discard_tile_id):
                 legal_actions.append(1)
@@ -372,6 +374,7 @@ class MahjongEngine:
             self.hand_manager.remove_card(self.game_state.current_player_index, self.game_state.last_discard_tile_id)
             if self.if_display: # 这里补杠之后的可视化是给人类玩家看的
                 self.visualizer.draw_game(self.get_visible_state(self.players_type.index(0))) # 补杠后立即可视化当前局面，包含补杠动作
+            self.game_state.game_state = 4 # 设置为针对摸牌阶段的抢杠胡判定阶段
             for playerid in range(4): # 更新所有玩家的合法操作列表，检查是否有玩家可以抢杠胡
                 self.action_manager.legal_action_list[playerid] = self.get_legal_actions(playerid=playerid)
             for pid, actions in self.action_manager.legal_action_list.items():
