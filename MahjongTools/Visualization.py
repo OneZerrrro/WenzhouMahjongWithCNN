@@ -76,8 +76,8 @@ class EngineVisualization:
         print_name_map = {0: "下", 1: "对", 2: "上"}
         for i in range(3):
             j = (i + 1) % 3
-            total_vertical = [[], []]
-            discard_vertical = [[], []]
+            total_vertical = [["副", " "], ["露", " "]]
+            discard_vertical = [["弃", " "], ["牌", " "]]
             print(f"{print_name_map[j]}家: 玩家", game_state['real_order'][j+1])
             if player_meld[j]['peng']:                  self.format_and_add_meld_to_vertical(total_vertical, player_meld[j]['peng'], 'peng') # print("碰牌: ", player_meld[j]['peng'])
             if player_meld[j]['chi']:                   self.format_and_add_meld_to_vertical(total_vertical, player_meld[j]['chi'], 'chi') # print("吃牌: ", player_meld[j]['chi'])
@@ -90,9 +90,9 @@ class EngineVisualization:
             if discard_vertical[1]:                     print("".join(discard_vertical[1]))
             print("--------------------")
         print("当前玩家: 玩家", game_state['real_order'][0])
-        hand_vertical = [[], []]
-        total_vertical = [[], []]
-        discard_vertical = [[], []]
+        hand_vertical = [["手", " "], ["牌", " "]]
+        total_vertical = [["副", " "], ["露", " "]]
+        discard_vertical = [["弃", " "], ["牌", " "]]
         self.format_and_add_meld_to_vertical(hand_vertical, current_player_meld['hand'], 'hand') # print("手牌: ", current_player_meld['hand'])
         if current_player_meld['peng']:         self.format_and_add_meld_to_vertical(total_vertical, current_player_meld['peng'], 'peng') # print("碰牌: ", current_player_meld['peng'])
         if current_player_meld['chi']:          self.format_and_add_meld_to_vertical(total_vertical, current_player_meld['chi'], 'chi') # print("吃牌: ", current_player_meld['chi'])
@@ -179,7 +179,7 @@ class EngineVisualization:
             print("各家摸牌完毕，正在判定三财神、八对...")
             return # 出现在游戏开始时判定三财神、八对的情况
         if last_action['playerid'] == -1:
-            print("当前玩家摸牌: ", self.true_tile_names[last_action['action_id']//9][last_action['action_id']%9])
+            print("当前玩家摸牌  ", self.true_tile_names[last_action['action_id']//9][last_action['action_id']%9])
         else:
             print(f"刚刚玩家{last_action['playerid']}", end="")
             if last_action['action_id'] == 0:

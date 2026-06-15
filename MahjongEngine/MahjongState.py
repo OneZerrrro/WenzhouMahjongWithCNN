@@ -363,7 +363,7 @@ class HandManager:
         Args:
             player_id (int): 当前玩家索引，0-3
             tile_id (int): 牌ID，0-33"""
-        self.players_hand[player_id]['hand'][tile_id // 9, tile_id % 9, 0] -= 1
+        # self.players_hand[player_id]['hand'][tile_id // 9, tile_id % 9, 0] -= 1
         self.players_hand[player_id]['melds'][tile_id // 9, tile_id % 9, 1] -= 1
         self.players_hand[player_id]['melds'][tile_id // 9, tile_id % 9, 2] += 1
         return
