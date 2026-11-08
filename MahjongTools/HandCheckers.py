@@ -56,7 +56,8 @@ class HandChecker:
             return mks, mss, ps, ds
         
     def get_shanten_num(self, hand: np.ndarray, is_god_inplace: bool = False) -> int:
-        """检查向听数
+        """检查向听数，向听数计算公式为：
+        听牌分数 = 槽位数 * 2 - (刻子数 + 顺子数) * 2 - 财神数 - min(缺张刻数 + 缺张顺数 - 雀头, 剩余槽位数) - 雀头数
         Args:
             hand: 玩家手牌，包括副露信息
             is_god_inplace (bool): 是否检查财神归位
